@@ -6,9 +6,18 @@ use App\Models\Product;
 
 class ProductService
 {
-    public function createProduct($name, $sku, $price, $currency, $variations, $quantity, $status)
+    public function getAllProductsIds(){
+        return Product::pluck('id')->toArray();
+    }
+
+    public function softDeleteProduct($csvProductIds){
+        Product::whereIn('id', $csvProductIds)->update(['deleted_at' => now()]);
+    }
+
+    public function createProduct($id, $name, $sku, $price, $currency, $variations, $quantity, $status)
     {
         $product = new Product();
+        $product->id = $id;
         $product->name = $name;
         $product->sku = isset($sku) ? $sku : null;
         $product->price = $price;

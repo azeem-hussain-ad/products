@@ -23,6 +23,11 @@ class ProductController extends Controller
 
         if ($product) {
             $updatedProduct =  $this->productService->updateProductQuantity($id, $quantity);
+            // notify to the warehouse
+            $warehouseName = env('WAREHOUSE_NAME');
+            $warehouseEmail = env('WAREHOUSE_EMAIL');
+
+            echo "email sent to warehouse named -> " .$warehouseName . " with email-> " .$warehouseEmail."; ";
 
             if($product->quantity > 0 && $product->quantity != 'NULL'){
 
@@ -34,9 +39,10 @@ class ProductController extends Controller
             foreach ($notifieables as $notifyable) {
                 // send the nofication to user
 
-                echo "email sent to user:-->" .$notifyable->user->name;
+                echo "email sent to user -> " .$notifyable->user->name ."; ";
             }
 
+            // update the nofiable users to true means they are notified
             NotifyUsersController::updateNotifieables($id);
 
             return response()->json(['message' => 'Product Quantity updated ', 'quantity'=> $updatedProduct->quantity], 200);
@@ -68,12 +74,14 @@ class ProductController extends Controller
 
     public function importProducts() {
         $csvFile = base_path('database/seeders/csv/products.csv'); // Path to your CSV file
+        $csvProductIds =[];
 
         if (file_exists($csvFile)) {
             $file = fopen($csvFile, 'r');
             $header = fgetcsv($file);
 
             while ($row = fgetcsv($file)) {
+                $id = $row[0];
                 $name = $row[1];
                 $sku = $row[2];
                 $price = $row[3];
@@ -82,15 +90,24 @@ class ProductController extends Controller
                 $quantity = $row[6];
                 $status = $row[7];
 
-                if (isset($name)) {
+                if (isset($name) && isset($id)) {
+                    $checkProductByid = $this->productService->findProductById($id);
+                    $csvProductIds[] = $id;
 
-                    $product = $this->productService->createProduct($name, $sku, $price, $currency, $variations, $quantity, $status);
+                    if (!$checkProductByid) {
+                        $product = $this->productService->createProduct($id, $name, $sku, $price, $currency, $variations, $quantity, $status);
+                    }
                 }
 
             }
 
             fclose($file);
+            $allProductIds = $this->productService->getAllProductsIds();
 
+            // Filter out the product IDs added during the current import
+            $addedProductIds = array_diff($allProductIds, $csvProductIds);
+
+            $softDel = $this->productService->softDeleteProduct($addedProductIds);
             return response()->json(['message' => 'Products imported successfully'], 200);
         } else {
             return response()->json(['message' => 'CSV file not found'], 404);

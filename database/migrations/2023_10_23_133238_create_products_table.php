@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('quantity')->nullable();
             $table->string('status');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

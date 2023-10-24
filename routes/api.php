@@ -17,7 +17,9 @@ use App\Http\Controllers\ProductController;
 
 
 Route::post('/import-products', [ProductController::class, 'importProducts']);
+
 Route::get('/check-product/product/{product_id}/user/{user_id}', [ProductController::class, 'checkProduct']);
+
 Route::put('/update-quantity/product/{product_id}/quantity/{new_quantity}', [ProductController::class, 'updateQuantity']);
 
 
